@@ -121,13 +121,16 @@ jobs:
     - name: Generate version tag
       id: version
       run: |
-        git fetch --tags
+        git fetch --tags "https://github.com/${{ github.repository }}.git"
         TAG_PREFIX="${{ inputs.tag_prefix }}"
-        LAST_TAG=$(git describe --tags --abbrev=0 || echo "${TAG_PREFIX}0.0.0")
+        LAST_TAG=$(git ls-remote --tags "https://github.com/${{ github.repository }}.git" | awk -F/ '/refs\/tags\// {print $3}' | grep "^${TAG_PREFIX}" | sort -V | tail -n1)
+        if [ -z "$LAST_TAG" ]; then
+          LAST_TAG="${TAG_PREFIX}0.0.0"
+        fi
         VERSION="${LAST_TAG#$TAG_PREFIX}"
         IFS='.' read -r major minor patch <<< "$VERSION"
         NEW_PATCH=$((patch + 1))
-        NEW_TAG="${{ inputs.tag_prefix }}${major}.${minor}.${NEW_PATCH}"
+        NEW_TAG="${TAG_PREFIX}${major}.${minor}.${NEW_PATCH}"
         echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
         echo "release_name=${{ inputs.release_name }} $NEW_TAG" >> $GITHUB_OUTPUT
         
