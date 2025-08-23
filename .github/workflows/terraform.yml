@@ -121,6 +121,7 @@ jobs:
     - name: Generate version tag
       id: version
       run: |
+        git fetch --tags
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "${{ inputs.tag_prefix }}0.0.0")
         VERSION=${LAST_TAG#${{ inputs.tag_prefix }}}
         IFS='.' read -r major minor patch <<< "$VERSION"
