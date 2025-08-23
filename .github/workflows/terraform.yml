@@ -122,8 +122,9 @@ jobs:
       id: version
       run: |
         git fetch --tags
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "${{ inputs.tag_prefix }}0.0.0")
-        VERSION=${LAST_TAG#${{ inputs.tag_prefix }}}
+        TAG_PREFIX="${{ inputs.tag_prefix }}"
+        LAST_TAG=$(git describe --tags --abbrev=0 || echo "${TAG_PREFIX}0.0.0")
+        VERSION="${LAST_TAG#$TAG_PREFIX}"
         IFS='.' read -r major minor patch <<< "$VERSION"
         NEW_PATCH=$((patch + 1))
         NEW_TAG="${{ inputs.tag_prefix }}${major}.${minor}.${NEW_PATCH}"
