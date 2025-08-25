@@ -39,10 +39,11 @@ on:
         required: false
         type: string
         default: '1.5.0'
-      terraform_directory:
+      terraform_directories:
         required: false
         type: string
         default: './terraform'
+        description: 'Space-separated list of Terraform module directories (e.g., "module1 module2 module3")'
       archive_prefix:
         required: false
         type: string
@@ -86,14 +87,16 @@ jobs:
       with:
         terraform_version: ${{ inputs.terraform_version }}
       
-    - name: Terraform Init
-      run: terraform init -backend=false
-      working-directory: ${{ inputs.terraform_directory }}
-      
-    - name: Terraform Validate
-      run: terraform validate
-      working-directory: ${{ inputs.terraform_directory }}
-
+    - name: Terraform Init & Validate (all modules)
+      run: |
+        # Split the input into an array
+        IFS=' ' read -r -a dirs <<< "${{ inputs.terraform_directories }}"
+        for dir in "${dirs[@]}"; do
+            echo "Initializing $dir"
+            terraform -chdir="$dir" init -backend=false
+            echo "Validating $dir"
+            terraform -chdir="$dir" validate
+        done
     - name: Comment PR
       uses: actions/github-script@v7
       if: github.event_name == 'pull_request'
@@ -120,10 +123,12 @@ jobs:
       with:
         terraform_version: ${{ inputs.terraform_version }}
       
-    - name: Terraform Init
-      run: terraform init -backend=false
-      working-directory: ${{ inputs.terraform_directory }}
-      
+    - name: Terraform Init (all modules)
+      run: |
+        for dir in "${{ inputs.terraform_directories }}"; do
+          echo "Initializing $dir"
+          terraform init -backend=false "$dir"
+        done
     - name: Generate version tag
       id: version
       run: |
@@ -149,12 +154,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Create terraform directory archive
+    - name: Archive terraform modules
       run: |
-        cd ${{ inputs.terraform_directory }}
-        zip -r ../${{ inputs.archive_prefix }}-${{ steps.version.outputs.tag_name }}.zip .
-        cd ..
-        
+        for dir in "${{ inputs.terraform_directories }}"; do
+          zip -r "${{ inputs.archive_prefix }}-${{ steps.version.outputs.tag_name }}-$(basename "$dir").zip" "$dir"
+        done
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
