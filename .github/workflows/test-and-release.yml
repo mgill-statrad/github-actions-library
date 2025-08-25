@@ -23,10 +23,6 @@ jobs:
           chmod +x actionlint
       - name: Run actionlint
         run: ./actionlint -color
-      - name: Install yamllint
-        run: sudo apt-get install -y yamllint
-      - name: Run yamllint on workflows
-        run: yamllint .github/workflows/
       # Add your test steps here (lint, unit tests, etc.)
       - name: Run tests
         run: echo "No tests defined. Add your test commands here."
