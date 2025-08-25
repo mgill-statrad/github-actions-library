@@ -22,7 +22,7 @@ jobs:
           tar -xzf actionlint.tar.gz
           chmod +x actionlint
       - name: Run actionlint
-        run: ./actionlint -color
+        run: ./actionlint -color -verbose
       # Add your test steps here (lint, unit tests, etc.)
       - name: Run tests
         run: echo "No tests defined. Add your test commands here."
