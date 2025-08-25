@@ -89,6 +89,7 @@ jobs:
       
     - name: Terraform Init & Validate (all modules)
       run: |
+        set -f
         for dir in ${{ inputs.terraform_directories }}; do
           echo "Initializing $dir"
           terraform init -backend=false "$dir"
