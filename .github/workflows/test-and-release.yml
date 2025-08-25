@@ -1,0 +1,71 @@
+name: test-and-release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install actionlint
+        run: |
+          curl -sSL https://github.com/rhysd/actionlint/releases/latest/download/actionlint-linux-amd64.zip -o actionlint.zip
+          unzip actionlint.zip
+          chmod +x actionlint
+      - name: Run actionlint
+        run: ./actionlint -color
+      - name: Install yamllint
+        run: sudo apt-get install -y yamllint
+      - name: Run yamllint on workflows
+        run: yamllint .github/workflows/
+      # Add your test steps here (lint, unit tests, etc.)
+      - name: Run tests
+        run: echo "No tests defined. Add your test commands here."
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Generate version tag
+        id: version
+        run: |
+          git fetch --tags "https://github.com/${GITHUB_REPOSITORY}.git"
+          TAG_PREFIX="v"
+          LAST_TAG=$(git ls-remote --tags "https://github.com/${GITHUB_REPOSITORY}.git" | awk -F/ '/refs\/tags\// {print $3}' | grep "^${TAG_PREFIX}" | sort -V | tail -n1)
+          if [ -z "$LAST_TAG" ]; then
+            LAST_TAG="${TAG_PREFIX}0.0.0"
+          fi
+          VERSION="${LAST_TAG#$TAG_PREFIX}"
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          NEW_PATCH=$((patch + 1))
+          NEW_TAG="${TAG_PREFIX}${major}.${minor}.${NEW_PATCH}"
+          echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "release_name=Release $NEW_TAG" >> $GITHUB_OUTPUT
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.version.outputs.tag_name }}
+          git push origin ${{ steps.version.outputs.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          release_name: ${{ steps.version.outputs.release_name }}
+          body: Auto-generated release
+          draft: false
+          prerelease: false
