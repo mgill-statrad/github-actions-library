@@ -133,13 +133,13 @@ jobs:
         if [ -z "$LAST_TAG" ]; then
           LAST_TAG="${TAG_PREFIX}0.0.0"
         fi
-        VERSION="${LAST_TAG#$TAG_PREFIX}"
+        VERSION="${LAST_TAG#"$TAG_PREFIX"}"
         IFS='.' read -r major minor patch <<< "$VERSION"
         NEW_PATCH=$((patch + 1))
         NEW_TAG="${TAG_PREFIX}${major}.${minor}.${NEW_PATCH}"
-        echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
-        echo "release_name=${{ inputs.release_name }} $NEW_TAG" >> $GITHUB_OUTPUT
-        
+        echo "tag_name=$NEW_TAG" >> "$GITHUB_OUTPUT"
+        echo "release_name=${{ inputs.release_name }} $NEW_TAG" >> "$GITHUB_OUTPUT"
+
     - name: Create and push tag
       run: |
         git config user.name "github-actions[bot]"
