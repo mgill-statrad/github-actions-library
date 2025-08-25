@@ -93,7 +93,7 @@ jobs:
         IFS=' ' read -r -a dirs <<< "${{ inputs.terraform_directories }}"
         for dir in "${dirs[@]}"; do
             echo "Initializing $dir"
-            terraform init -backend=false "$dir"
+            terraform init -backend=false -chdir="$dir"
             echo "Validating $dir"
             terraform validate "$dir"
         done
